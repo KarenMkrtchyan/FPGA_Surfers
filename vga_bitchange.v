@@ -19,6 +19,7 @@ module vga_bitchange(
     localparam RED    = 12'b1111_0000_0000;
     localparam GREEN  = 12'b0000_1111_0000;
     localparam GRAY   = 12'b1000_1000_1000;
+    localparam BLUE   = 12'h468;
 
     // Screen & object sizes
     localparam SCREEN_BOTTOM_Y   = 10'd479;
@@ -56,6 +57,8 @@ module vga_bitchange(
     reg [1:0]  lane;             // 0,1,2 (left, middle, right)
     reg [9:0]  car_x;            // current center X
     reg [9:0]  car_target_x;     // target lane center X
+    wire [11:0] boat_pixel;
+    wire        in_boat_area;
 
     // Double obstacle
     reg [1:0] obstacle_lane0, obstacle_lane1;
@@ -86,6 +89,19 @@ module vga_bitchange(
         // Feedback taps: x^8 + x^6 + 1
         lfsr <= {lfsr[6:0], lfsr[7] ^ lfsr[5]};
     end
+
+    // --------------- BOAT VISUALS -----------------------
+
+    boat_anim boat_animation (
+        .clk(clk),
+        .slow_anim_tick(slow_tick),  // reuse your existing slow_tick for now
+        .car_x(car_x),
+        .hCount(hCount),
+        .vCount(vCount),
+        .boat_pixel(boat_pixel),
+        .in_boat_area(in_boat_area)
+    );
+
 
     // --------------- INITIAL STATE ----------------------
     initial begin
@@ -182,12 +198,12 @@ module vga_bitchange(
             //    obstacle_lane <= 2'd0;
             //    obstacle_y    <= 10'd0;
            
-            // Independent obstacles at different Y positions
-            obstacle_lane0 <= 2'd0;     // left lane
-            obstacle_y0    <= 10'd0;
+                // Independent obstacles at different Y positions
+                obstacle_lane0 <= 2'd0;     // left lane
+                obstacle_y0    <= 10'd0;
 
-            obstacle_lane1 <= 2'd2;     // right lane
-            obstacle_y1    <= 10'd120;  // mid-screen offset
+                obstacle_lane1 <= 2'd2;     // right lane
+                obstacle_y1    <= 10'd120;  // mid-screen offset
 
 
                 score <= 16'd0;
@@ -346,20 +362,24 @@ module vga_bitchange(
             if (in_player_rect || in_obstacle_rect)
                 rgb = RED;
             else
-                rgb = BLACK;
+                rgb = BLUE;
         end
         else begin
             // normal drawing
-            rgb = 12'h468;          // background
+            rgb = BLUE;          // background
 
             if (in_lane_lines)
-                rgb = GRAY;       // lane dividers
+                rgb = BLUE;       // lane dividers
 
             if (in_obstacle_rect)
                 rgb = GREEN;      // obstacle
 
             if (in_player_rect)
                 rgb = WHITE;      // player
+
+           // BOAT SPRITE: draw over everything else
+            if (in_boat_area)
+                rgb = boat_pixel;
         end
     end
 
