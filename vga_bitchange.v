@@ -25,12 +25,12 @@ module vga_bitchange(
     localparam SCREEN_BOTTOM_Y   = 10'd479;
 
     localparam PLAYER_Y_START    = 10'd400;
-    localparam PLAYER_HEIGHT     = 10'd40;
+    localparam PLAYER_HEIGHT     = 10'd80;
     localparam PLAYER_Y_END      = PLAYER_Y_START + PLAYER_HEIGHT;
-    localparam PLAYER_HALF_WIDTH = 10'd20;   // total width = 40
+    localparam PLAYER_HALF_WIDTH = 10'd40;   // total width = 80
 
-    localparam OBSTACLE_HEIGHT   = 10'd40;
-    localparam OBSTACLE_HALF_W   = 10'd20;   // total width = 40
+    localparam OBSTACLE_HEIGHT   = 10'd80;
+    localparam OBSTACLE_HALF_W   = 10'd40;   // total width = 80
 
     // Lane centers in X (tweak as needed)
     localparam LANE0_X_CENTER    = 10'd220;
@@ -69,6 +69,34 @@ module vga_bitchange(
     wire is_start    = (game_state == ST_START);
     wire is_play     = (game_state == ST_PLAY);
     wire is_gameover = (game_state == ST_GAMEOVER);
+
+     // Obstacle centers in X (per lane)
+    wire [9:0] obs0_x_center =
+        (obstacle_lane0 == 2'd0) ? LANE0_X_CENTER :
+        (obstacle_lane0 == 2'd1) ? LANE1_X_CENTER :
+                                LANE2_X_CENTER;
+
+    wire [9:0] obs1_x_center =
+        (obstacle_lane1 == 2'd0) ? LANE0_X_CENTER :
+        (obstacle_lane1 == 2'd1) ? LANE1_X_CENTER :
+                                LANE2_X_CENTER;
+
+    // Player X-interval
+    wire [9:0] player_x_start = car_x - PLAYER_HALF_WIDTH;
+    wire [9:0] player_x_end   = car_x + PLAYER_HALF_WIDTH;
+
+    // Obstacle 0
+    wire [9:0] obs0_x_start = obs0_x_center - OBSTACLE_HALF_W;
+    wire [9:0] obs0_x_end   = obs0_x_center + OBSTACLE_HALF_W;
+    wire [9:0] obs0_y_start = obstacle_y0;
+    wire [9:0] obs0_y_end   = obstacle_y0 + OBSTACLE_HEIGHT;
+
+    // Obstacle 1
+    wire [9:0] obs1_x_start = obs1_x_center - OBSTACLE_HALF_W;
+    wire [9:0] obs1_x_end   = obs1_x_center + OBSTACLE_HALF_W;
+    wire [9:0] obs1_y_start = obstacle_y1;
+    wire [9:0] obs1_y_end   = obstacle_y1 + OBSTACLE_HEIGHT;
+
 
     // --------------- SLOW TICK GENERATOR ----------------------
 
@@ -126,41 +154,7 @@ module vga_bitchange(
         endcase
     end
 
-   // wire [9:0] obstacle_x_center =
-   //     (obstacle_lane == 2'd0) ? LANE0_X_CENTER :
-   //     (obstacle_lane == 2'd1) ? LANE1_X_CENTER :
-   //                               LANE2_X_CENTER;
-
-        wire [9:0] obstacle_x_center1 =
-            (obstacle_lane1 == 2'd0) ? LANE0_X_CENTER :
-            (obstacle_lane1 == 2'd1) ? LANE1_X_CENTER :
-                                      LANE2_X_CENTER;
-        wire [9:0] obstacle_x_center0 =
-            (obstacle_lane0 == 2'd0) ? LANE0_X_CENTER :
-            (obstacle_lane0 == 2'd1) ? LANE1_X_CENTER :
-                                      LANE2_X_CENTER;
-
     // --------------- COLLISION DETECTION ---------------------- 
-
-    wire [9:0] player_x_start = car_x - PLAYER_HALF_WIDTH;
-    wire [9:0] player_x_end   = car_x + PLAYER_HALF_WIDTH;
-
-    // Obstacle 0
-    wire [9:0] obs0_x_start = obs0_x_center - OBSTACLE_HALF_W;
-    wire [9:0] obs0_x_end   = obs0_x_center + OBSTACLE_HALF_W;
-    wire [9:0] obs0_y_start = obstacle_y0;
-    wire [9:0] obs0_y_end   = obstacle_y0 + OBSTACLE_HEIGHT;
-
-    // Obstacle 1
-    wire [9:0] obs1_x_start = obs1_x_center - OBSTACLE_HALF_W;
-    wire [9:0] obs1_x_end   = obs1_x_center + OBSTACLE_HALF_W;
-    wire [9:0] obs1_y_start = obstacle_y1;
-    wire [9:0] obs1_y_end   = obstacle_y1 + OBSTACLE_HEIGHT;
-
-   // wire [9:0] obstacle_y_end = obstacle_y + OBSTACLE_HEIGHT;
-
-   //     (obstacle_y_end >= PLAYER_Y_START) &&
-   //     (obstacle_y     <= PLAYER_Y_END);
 
     // X-overlap and Y-overlap for obstacle 0
     wire x_overlap0 = (player_x_end   >= obs0_x_start) &&
@@ -203,7 +197,7 @@ module vga_bitchange(
                 obstacle_y0    <= 10'd0;
 
                 obstacle_lane1 <= 2'd2;     // right lane
-                obstacle_y1    <= 10'd120;  // mid-screen offset
+                obstacle_y1    <= 10'd80;  // mid-screen offset
 
 
                 score <= 16'd0;
@@ -306,35 +300,6 @@ module vga_bitchange(
         (hCount >= player_x_start && hCount < player_x_end) &&
         (vCount >= PLAYER_Y_START && vCount < PLAYER_Y_END);
 
-    // obstacle rectangle (single)
-  //  wire [9:0] obs_x_start = obstacle_x_center - OBSTACLE_HALF_W;
-  //  wire [9:0] obs_x_end   = obstacle_x_center + OBSTACLE_HALF_W;
-
-  //  wire in_obstacle_rect =
-  //      (hCount >= obs_x_start && hCount < obs_x_end) &&
-  //      (vCount >= obstacle_y  && vCount < obstacle_y_end);
-
-
-    // rectangles for each obstacle (double)
-    wire [9:0] obs0_x_center =
-        (obstacle_lane0 == 2'd0) ? LANE0_X_CENTER :
-        (obstacle_lane0 == 2'd1) ? LANE1_X_CENTER :
-                                LANE2_X_CENTER;
-
-    wire [9:0] obs1_x_center =
-        (obstacle_lane1 == 2'd0) ? LANE0_X_CENTER :
-        (obstacle_lane1 == 2'd1) ? LANE1_X_CENTER :
-                                LANE2_X_CENTER;
-
-
-    wire [9:0] obs0_x_start = obs0_x_center - OBSTACLE_HALF_W;
-    wire [9:0] obs0_x_end   = obs0_x_center + OBSTACLE_HALF_W;
-    wire [9:0] obs0_y_end   = obstacle_y0 + OBSTACLE_HEIGHT;
-
-    wire [9:0] obs1_x_start = obs1_x_center - OBSTACLE_HALF_W;
-    wire [9:0] obs1_x_end   = obs1_x_center + OBSTACLE_HALF_W;
-    wire [9:0] obs1_y_end   = obstacle_y1 + OBSTACLE_HEIGHT;
-
     wire in_obstacle0 =
         (hCount >= obs0_x_start && hCount < obs0_x_end) &&
         (vCount >= obstacle_y0  && vCount < obs0_y_end);
@@ -374,8 +339,8 @@ module vga_bitchange(
             if (in_obstacle_rect)
                 rgb = GREEN;      // obstacle
 
-            if (in_player_rect)
-                rgb = WHITE;      // player
+          //  if (in_player_rect)
+            //    rgb = WHITE;      // player
 
            // BOAT SPRITE: draw over everything else
             if (in_boat_area)
@@ -384,3 +349,7 @@ module vga_bitchange(
     end
 
 endmodule
+
+
+// change the red
+// add obstacles
