@@ -1,5 +1,5 @@
 `timescale 1ns / 1ps
-
+ // 2 obstacles
 module vga_bitchange(
     input  clk,
     input  bright,
@@ -57,9 +57,9 @@ module vga_bitchange(
     reg [9:0]  car_x;            // current center X
     reg [9:0]  car_target_x;     // target lane center X
 
-    // Single obstacle
-    reg [1:0] obstacle_lane;     // lane of obstacle
-    reg [9:0] obstacle_y;        // top of obstacle
+    // Double obstacle
+    reg [1:0] obstacle_lane0, obstacle_lane1;
+    reg [9:0] obstacle_y0,    obstacle_y1;                       
 
     // Game state
     reg [1:0] game_state = ST_START;
@@ -94,8 +94,8 @@ module vga_bitchange(
         car_target_x  = LANE1_X_CENTER;
         car_state     = CAR_READY;
 
-        obstacle_lane = 2'd1;
-        obstacle_y    = 10'd0;
+    //    obstacle_lane = 2'd1;
+    //    obstacle_y    = 10'd0;
 
         score         = 16'd0;
     end
@@ -110,24 +110,63 @@ module vga_bitchange(
         endcase
     end
 
-    wire [9:0] obstacle_x_center =
-        (obstacle_lane == 2'd0) ? LANE0_X_CENTER :
-        (obstacle_lane == 2'd1) ? LANE1_X_CENTER :
-                                  LANE2_X_CENTER;
+   // wire [9:0] obstacle_x_center =
+   //     (obstacle_lane == 2'd0) ? LANE0_X_CENTER :
+   //     (obstacle_lane == 2'd1) ? LANE1_X_CENTER :
+   //                               LANE2_X_CENTER;
+
+        wire [9:0] obstacle_x_center1 =
+            (obstacle_lane1 == 2'd0) ? LANE0_X_CENTER :
+            (obstacle_lane1 == 2'd1) ? LANE1_X_CENTER :
+                                      LANE2_X_CENTER;
+        wire [9:0] obstacle_x_center0 =
+            (obstacle_lane0 == 2'd0) ? LANE0_X_CENTER :
+            (obstacle_lane0 == 2'd1) ? LANE1_X_CENTER :
+                                      LANE2_X_CENTER;
 
     // --------------- COLLISION DETECTION ---------------------- 
 
     wire [9:0] player_x_start = car_x - PLAYER_HALF_WIDTH;
     wire [9:0] player_x_end   = car_x + PLAYER_HALF_WIDTH;
 
-    wire [9:0] obstacle_y_end = obstacle_y + OBSTACLE_HEIGHT;
+    // Obstacle 0
+    wire [9:0] obs0_x_start = obs0_x_center - OBSTACLE_HALF_W;
+    wire [9:0] obs0_x_end   = obs0_x_center + OBSTACLE_HALF_W;
+    wire [9:0] obs0_y_start = obstacle_y0;
+    wire [9:0] obs0_y_end   = obstacle_y0 + OBSTACLE_HEIGHT;
 
-    wire y_overlap =
-        (obstacle_y_end >= PLAYER_Y_START) &&
-        (obstacle_y     <= PLAYER_Y_END);
+    // Obstacle 1
+    wire [9:0] obs1_x_start = obs1_x_center - OBSTACLE_HALF_W;
+    wire [9:0] obs1_x_end   = obs1_x_center + OBSTACLE_HALF_W;
+    wire [9:0] obs1_y_start = obstacle_y1;
+    wire [9:0] obs1_y_end   = obstacle_y1 + OBSTACLE_HEIGHT;
 
-    wire lane_match  = (lane == obstacle_lane);
-    wire collision   = lane_match && y_overlap;
+   // wire [9:0] obstacle_y_end = obstacle_y + OBSTACLE_HEIGHT;
+
+   //     (obstacle_y_end >= PLAYER_Y_START) &&
+   //     (obstacle_y     <= PLAYER_Y_END);
+
+    // X-overlap and Y-overlap for obstacle 0
+    wire x_overlap0 = (player_x_end   >= obs0_x_start) &&
+                    (player_x_start <= obs0_x_end);
+
+    wire y_overlap0 = (PLAYER_Y_END   >= obs0_y_start) &&
+                    (PLAYER_Y_START <= obs0_y_end);
+
+    wire collision0 = x_overlap0 && y_overlap0;
+
+    // X-overlap and Y-overlap for obstacle 1
+    wire x_overlap1 = (player_x_end   >= obs1_x_start) &&
+                    (player_x_start <= obs1_x_end);
+
+    wire y_overlap1 = (PLAYER_Y_END   >= obs1_y_start) &&
+                    (PLAYER_Y_START <= obs1_y_end);
+
+    wire collision1 = x_overlap1 && y_overlap1;
+
+    // Final collision flag
+    wire collision = collision0 || collision1;
+
 
     // --------------- MAIN GAME FSM + CAR FSM + OBSTACLE MOTION ----------------
     always @(posedge clk) begin
@@ -140,8 +179,16 @@ module vga_bitchange(
                 car_x     <= LANE1_X_CENTER;
                 car_state <= CAR_READY;
 
-                obstacle_lane <= 2'd0;
-                obstacle_y    <= 10'd0;
+            //    obstacle_lane <= 2'd0;
+            //    obstacle_y    <= 10'd0;
+           
+            // Independent obstacles at different Y positions
+            obstacle_lane0 <= 2'd0;     // left lane
+            obstacle_y0    <= 10'd0;
+
+            obstacle_lane1 <= 2'd2;     // right lane
+            obstacle_y1    <= 10'd120;  // mid-screen offset
+
 
                 score <= 16'd0;
 
@@ -185,15 +232,33 @@ module vga_bitchange(
 
                 // ---- OBSTACLE MOTION + SCORING ----
                 if (slow_tick) begin
-                    if (obstacle_y < SCREEN_BOTTOM_Y + OBSTACLE_HEIGHT) begin
-                        obstacle_y <= obstacle_y + OBSTACLE_STEP;
+                //    if (obstacle_y < SCREEN_BOTTOM_Y + OBSTACLE_HEIGHT) begin
+                //        obstacle_y <= obstacle_y + OBSTACLE_STEP;
+                //    end
+                    if (obstacle_y0 < SCREEN_BOTTOM_Y + OBSTACLE_HEIGHT) begin
+                        obstacle_y0 <= obstacle_y0 + OBSTACLE_STEP;
+                    end else begin
+                        obstacle_y0    <= 10'd0;
+                        obstacle_lane0 <= lfsr[1:0] % 3;   // random lane 0..2
+                        score          <= score + 16'd1;
                     end
-                    else begin
-                        obstacle_y    <= 10'd0;
-                        obstacle_lane <= lfsr[1:0] % 3; // random lane 0..2
-                        score         <= score + 16'd1;
+
+                    // obstacle 1
+                    if (obstacle_y1 < SCREEN_BOTTOM_Y + OBSTACLE_HEIGHT) begin
+                        obstacle_y1 <= obstacle_y1 + OBSTACLE_STEP;
+                    end else begin
+                        obstacle_y1    <= 10'd0;
+                        obstacle_lane1 <= lfsr[3:2] % 3;   // independent random lane 0..2
+                        score          <= score + 16'd1;
                     end
                 end
+
+                //    else begin
+                //        obstacle_y    <= 10'd0;
+                //        obstacle_lane <= lfsr[1:0] % 3; // random lane 0..2
+                //        score         <= score + 16'd1;
+                //    end
+                //end
 
                 // ---- COLLISION CHECK ----
                 if (collision) begin
@@ -225,13 +290,45 @@ module vga_bitchange(
         (hCount >= player_x_start && hCount < player_x_end) &&
         (vCount >= PLAYER_Y_START && vCount < PLAYER_Y_END);
 
-    // obstacle rectangle
-    wire [9:0] obs_x_start = obstacle_x_center - OBSTACLE_HALF_W;
-    wire [9:0] obs_x_end   = obstacle_x_center + OBSTACLE_HALF_W;
+    // obstacle rectangle (single)
+  //  wire [9:0] obs_x_start = obstacle_x_center - OBSTACLE_HALF_W;
+  //  wire [9:0] obs_x_end   = obstacle_x_center + OBSTACLE_HALF_W;
 
-    wire in_obstacle_rect =
-        (hCount >= obs_x_start && hCount < obs_x_end) &&
-        (vCount >= obstacle_y  && vCount < obstacle_y_end);
+  //  wire in_obstacle_rect =
+  //      (hCount >= obs_x_start && hCount < obs_x_end) &&
+  //      (vCount >= obstacle_y  && vCount < obstacle_y_end);
+
+
+    // rectangles for each obstacle (double)
+    wire [9:0] obs0_x_center =
+        (obstacle_lane0 == 2'd0) ? LANE0_X_CENTER :
+        (obstacle_lane0 == 2'd1) ? LANE1_X_CENTER :
+                                LANE2_X_CENTER;
+
+    wire [9:0] obs1_x_center =
+        (obstacle_lane1 == 2'd0) ? LANE0_X_CENTER :
+        (obstacle_lane1 == 2'd1) ? LANE1_X_CENTER :
+                                LANE2_X_CENTER;
+
+
+    wire [9:0] obs0_x_start = obs0_x_center - OBSTACLE_HALF_W;
+    wire [9:0] obs0_x_end   = obs0_x_center + OBSTACLE_HALF_W;
+    wire [9:0] obs0_y_end   = obstacle_y0 + OBSTACLE_HEIGHT;
+
+    wire [9:0] obs1_x_start = obs1_x_center - OBSTACLE_HALF_W;
+    wire [9:0] obs1_x_end   = obs1_x_center + OBSTACLE_HALF_W;
+    wire [9:0] obs1_y_end   = obstacle_y1 + OBSTACLE_HEIGHT;
+
+    wire in_obstacle0 =
+        (hCount >= obs0_x_start && hCount < obs0_x_end) &&
+        (vCount >= obstacle_y0  && vCount < obs0_y_end);
+
+    wire in_obstacle1 =
+        (hCount >= obs1_x_start && hCount < obs1_x_end) &&
+        (vCount >= obstacle_y1  && vCount < obs1_y_end);
+
+    wire in_obstacle_rect = in_obstacle0 || in_obstacle1;
+
 
     // lane divider lines (vertical)
     wire in_lane_lines =
@@ -253,7 +350,7 @@ module vga_bitchange(
         end
         else begin
             // normal drawing
-            rgb = BLACK;          // background
+            rgb = 12'h468;          // background
 
             if (in_lane_lines)
                 rgb = GRAY;       // lane dividers
