@@ -87,8 +87,8 @@ module vga_bitchange(
     reg [1:0] obstacle_lane0, obstacle_lane1;
     reg [9:0] obstacle_y0,    obstacle_y1;
 
-    // Game state
-    reg [1:0] game_state = ST_START;
+    // Game state - start in PLAY state automatically
+    reg [1:0] game_state = ST_PLAY;
     wire is_start    = (game_state == ST_START);
     wire is_play     = (game_state == ST_PLAY);
     wire is_gameover = (game_state == ST_GAMEOVER);
@@ -168,6 +168,55 @@ module vga_bitchange(
         lfsr <= {lfsr[6:0], lfsr[7] ^ lfsr[5]};
     end
 
+    // --------------- BUTTON DEBOUNCING ----------------------
+    // Debounce counters for each button (prevents button bounce glitches)
+    reg [19:0] debounce_counter_L = 20'd0;
+    reg [19:0] debounce_counter_R = 20'd0;
+    reg [19:0] debounce_counter_C = 20'd0;
+    
+    // Debounced button signals
+    reg button_L_debounced = 1'b0;
+    reg button_R_debounced = 1'b0;
+    reg button_C_debounced = 1'b0;
+    
+    // Debounce threshold: ~20ms at 100MHz (2,000,000 cycles)
+    localparam DEBOUNCE_THRESHOLD = 20'd1000000;  // ~10ms at 100MHz
+    
+    always @(posedge clk) begin
+        // Button L debouncing
+        if (button_L) begin
+            if (debounce_counter_L < DEBOUNCE_THRESHOLD)
+                debounce_counter_L <= debounce_counter_L + 1'b1;
+            else
+                button_L_debounced <= 1'b1;
+        end else begin
+            debounce_counter_L <= 20'd0;
+            button_L_debounced <= 1'b0;
+        end
+        
+        // Button R debouncing
+        if (button_R) begin
+            if (debounce_counter_R < DEBOUNCE_THRESHOLD)
+                debounce_counter_R <= debounce_counter_R + 1'b1;
+            else
+                button_R_debounced <= 1'b1;
+        end else begin
+            debounce_counter_R <= 20'd0;
+            button_R_debounced <= 1'b0;
+        end
+        
+        // Button C debouncing
+        if (button_C) begin
+            if (debounce_counter_C < DEBOUNCE_THRESHOLD)
+                debounce_counter_C <= debounce_counter_C + 1'b1;
+            else
+                button_C_debounced <= 1'b1;
+        end else begin
+            debounce_counter_C <= 20'd0;
+            button_C_debounced <= 1'b0;
+        end
+    end
+
     // --------------- BOAT VISUALS -----------------------
 
     boat_anim boat_animation (
@@ -210,8 +259,11 @@ module vga_bitchange(
         car_target_x  = LANE1_X_CENTER;
         car_state     = CAR_READY;
 
-    //    obstacle_lane = 2'd1;
-    //    obstacle_y    = 10'd0;
+        // Initialize obstacle positions (game starts in ST_PLAY, so initialize here)
+        obstacle_lane0 = 2'd0;     // left lane
+        obstacle_y0    = 10'd0;
+        obstacle_lane1 = 2'd2;     // right lane
+        obstacle_y1    = 10'd80;  // mid-screen offset
 
         score         = 16'd0;
     end
@@ -273,9 +325,9 @@ module vga_bitchange(
 
                 score <= 16'd0;
 
-                // start when center button is pressed
-                if (button_C)
-                    game_state <= ST_PLAY;
+                // Auto-start game (no button press needed)
+                // Or use debounced button: if (button_C_debounced)
+                game_state <= ST_PLAY;
             end
 
             // ---------------- PLAY STATE --------------------
@@ -286,11 +338,11 @@ module vga_bitchange(
                         // car locked to lane center, accept inputs
                         car_x <= car_target_x;
 
-                        if (button_L && lane > 0) begin
+                        if (button_L_debounced && lane > 0) begin
                             lane      <= lane - 1;
                             car_state <= CAR_MOVING;
                         end
-                        else if (button_R && lane < 2) begin
+                        else if (button_R_debounced && lane < 2) begin
                             lane      <= lane + 1;
                             car_state <= CAR_MOVING;
                         end
@@ -347,7 +399,7 @@ module vga_bitchange(
                 end
 
                 // optional: allow center button to bail back to START
-                if (button_C) begin
+                if (button_C_debounced) begin
                     game_state <= ST_START;
                 end
             end
@@ -356,7 +408,7 @@ module vga_bitchange(
             ST_GAMEOVER: begin
                 // freeze car & obstacle (no movement here)
                 // restart with center button
-                if (button_C)
+                if (button_C_debounced)
                     game_state <= ST_START;
             end
 
