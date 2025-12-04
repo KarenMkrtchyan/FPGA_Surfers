@@ -21,6 +21,7 @@ module vga_bitchange(
     localparam GRAY   = 12'b1000_1000_1000;
     localparam BLUE   = 12'h468;
     localparam SAND   = 12'b1110_1100_1010;  // sand color (12-bit RGB: E C A) - light beige
+    localparam ROCK_BG = 12'b0110_1010_1110; // rock background color (transparent)
 
     // Screen & object sizes
     localparam SCREEN_WIDTH      = 10'd640;
@@ -83,9 +84,9 @@ module vga_bitchange(
     wire [11:0] boat_pixel;
     wire        in_boat_area;
 
-    // Double obstacle
-    reg [1:0] obstacle_lane0, obstacle_lane1;
-    reg [9:0] obstacle_y0,    obstacle_y1;
+    // Four obstacles (spaced out to ensure always a clear path)
+    reg [1:0] obstacle_lane0, obstacle_lane1, obstacle_lane2, obstacle_lane3;
+    reg [9:0] obstacle_y0, obstacle_y1, obstacle_y2, obstacle_y3;
 
     // Game state - start in PLAY state automatically
     reg [1:0] game_state = ST_PLAY;
@@ -104,6 +105,16 @@ module vga_bitchange(
         (obstacle_lane1 == 2'd1) ? LANE1_X_CENTER :
                                 LANE2_X_CENTER;
     
+    wire [9:0] obs2_x_center =
+        (obstacle_lane2 == 2'd0) ? LANE0_X_CENTER :
+        (obstacle_lane2 == 2'd1) ? LANE1_X_CENTER :
+                                LANE2_X_CENTER;
+
+    wire [9:0] obs3_x_center =
+        (obstacle_lane3 == 2'd0) ? LANE0_X_CENTER :
+        (obstacle_lane3 == 2'd1) ? LANE1_X_CENTER :
+                                LANE2_X_CENTER;
+    
     // Rock sprite areas and pixels (defined after obstacle centers)
     wire [9:0] rock0_x_start = obs0_x_center - ROCK_HALF_W;
     wire [9:0] rock0_x_end   = obs0_x_center + ROCK_HALF_W;
@@ -115,10 +126,24 @@ module vga_bitchange(
     wire [9:0] rock1_y_start = obstacle_y1;
     wire [9:0] rock1_y_end   = obstacle_y1 + ROCK_HEIGHT;
     
+    wire [9:0] rock2_x_start = obs2_x_center - ROCK_HALF_W;
+    wire [9:0] rock2_x_end   = obs2_x_center + ROCK_HALF_W;
+    wire [9:0] rock2_y_start = obstacle_y2;
+    wire [9:0] rock2_y_end   = obstacle_y2 + ROCK_HEIGHT;
+    
+    wire [9:0] rock3_x_start = obs3_x_center - ROCK_HALF_W;
+    wire [9:0] rock3_x_end   = obs3_x_center + ROCK_HALF_W;
+    wire [9:0] rock3_y_start = obstacle_y3;
+    wire [9:0] rock3_y_end   = obstacle_y3 + ROCK_HEIGHT;
+    
     wire in_rock0_area = (hCount >= rock0_x_start && hCount < rock0_x_end) &&
                          (vCount >= rock0_y_start && vCount < rock0_y_end);
     wire in_rock1_area = (hCount >= rock1_x_start && hCount < rock1_x_end) &&
                          (vCount >= rock1_y_start && vCount < rock1_y_end);
+    wire in_rock2_area = (hCount >= rock2_x_start && hCount < rock2_x_end) &&
+                         (vCount >= rock2_y_start && vCount < rock2_y_end);
+    wire in_rock3_area = (hCount >= rock3_x_start && hCount < rock3_x_end) &&
+                         (vCount >= rock3_y_start && vCount < rock3_y_end);
     
     // Local sprite coordinates for rock ROMs (row, col addresses)
     // Rock ROM uses [5:0] addresses (6 bits = 64x64 pixels)
@@ -127,9 +152,19 @@ module vga_bitchange(
     wire [5:0] rock0_sy = (vCount - rock0_y_start);  // row index (0-63 for 64px height)
     wire [5:0] rock1_sx = (hCount - rock1_x_start);
     wire [5:0] rock1_sy = (vCount - rock1_y_start);
+    wire [5:0] rock2_sx = (hCount - rock2_x_start);
+    wire [5:0] rock2_sy = (vCount - rock2_y_start);
+    wire [5:0] rock3_sx = (hCount - rock3_x_start);
+    wire [5:0] rock3_sy = (vCount - rock3_y_start);
     
     // Rock ROM pixel outputs (12-bit RGB color data)
-    wire [11:0] rock0_pixel, rock1_pixel;
+    wire [11:0] rock0_pixel, rock1_pixel, rock2_pixel, rock3_pixel;
+    
+    // Rock transparency: if pixel is background color, treat as transparent
+    wire rock0_transparent = (rock0_pixel == ROCK_BG);
+    wire rock1_transparent = (rock1_pixel == ROCK_BG);
+    wire rock2_transparent = (rock2_pixel == ROCK_BG);
+    wire rock3_transparent = (rock3_pixel == ROCK_BG);
 
     // Player X-interval
     wire [9:0] player_x_start = car_x - PLAYER_HALF_WIDTH;
@@ -249,6 +284,20 @@ module vga_bitchange(
         .col(rock1_sx),
         .color_data(rock1_pixel)
     );
+    
+    rock_rom rock2_rom (
+        .clk(clk),
+        .row(rock2_sy),
+        .col(rock2_sx),
+        .color_data(rock2_pixel)
+    );
+    
+    rock_rom rock3_rom (
+        .clk(clk),
+        .row(rock3_sy),
+        .col(rock3_sx),
+        .color_data(rock3_pixel)
+    );
 
 
     // --------------- INITIAL STATE ----------------------
@@ -259,10 +308,15 @@ module vga_bitchange(
         car_state     = CAR_READY;
 
         // Initialize obstacle positions (game starts in ST_PLAY, so initialize here)
+        // Space them out vertically: 0, 120, 240, 360 (ensures no overlap, always a path)
         obstacle_lane0 = 2'd0;     // left lane
         obstacle_y0    = 10'd0;
         obstacle_lane1 = 2'd2;     // right lane
-        obstacle_y1    = 10'd80;  // mid-screen offset
+        obstacle_y1    = 10'd120;  // spaced out
+        obstacle_lane2 = 2'd1;     // middle lane
+        obstacle_y2    = 10'd240;  // spaced out
+        obstacle_lane3 = 2'd0;     // left lane
+        obstacle_y3    = 10'd360;  // spaced out
 
         score         = 16'd0;
     end
@@ -281,9 +335,11 @@ module vga_bitchange(
     // Use rock sprite areas for collision detection (more accurate than rectangles)
     wire collision0 = in_rock0_area && in_boat_area;
     wire collision1 = in_rock1_area && in_boat_area;
+    wire collision2 = in_rock2_area && in_boat_area;
+    wire collision3 = in_rock3_area && in_boat_area;
 
     // Final collision flag
-    wire collision = collision0 || collision1;
+    wire collision = collision0 || collision1 || collision2 || collision3;
 
 
     // --------------- MAIN GAME FSM + CAR FSM + OBSTACLE MOTION ----------------
@@ -300,12 +356,16 @@ module vga_bitchange(
             //    obstacle_lane <= 2'd0;
             //    obstacle_y    <= 10'd0;
            
-                // Independent obstacles at different Y positions
+                // Independent obstacles at different Y positions (spaced out)
+                // Space them: 0, 120, 240, 360 to ensure always a clear path
                 obstacle_lane0 <= 2'd0;     // left lane
                 obstacle_y0    <= 10'd0;
-
                 obstacle_lane1 <= 2'd2;     // right lane
-                obstacle_y1    <= 10'd80;  // mid-screen offset
+                obstacle_y1    <= 10'd120;  // spaced out
+                obstacle_lane2 <= 2'd1;     // middle lane
+                obstacle_y2    <= 10'd240;  // spaced out
+                obstacle_lane3 <= 2'd0;     // left lane
+                obstacle_y3    <= 10'd360;  // spaced out
 
 
                 score <= 16'd0;
@@ -349,25 +409,96 @@ module vga_bitchange(
                 endcase
 
                 // ---- OBSTACLE MOTION + SCORING ----
+                // Smart lane assignment: ensure at least one lane is always clear
+                // Since obstacles are spaced 120px apart vertically, they won't overlap
+                // Use a rotating pattern to ensure lane diversity
                 if (slow_tick) begin
-                //    if (obstacle_y < SCREEN_BOTTOM_Y + OBSTACLE_HEIGHT) begin
-                //        obstacle_y <= obstacle_y + OBSTACLE_STEP;
-                //    end
+                    // Obstacle 0
                     if (obstacle_y0 < SCREEN_BOTTOM_Y + OBSTACLE_HEIGHT) begin
                         obstacle_y0 <= obstacle_y0 + OBSTACLE_STEP;
                     end else begin
-                        obstacle_y0    <= 10'd0;
-                        obstacle_lane0 <= lfsr[1:0] % 3;   // random lane 0..2
-                        score          <= score + 16'd1;
+                        obstacle_y0 <= 10'd0;
+                        // Pick a lane, but ensure at least one lane is clear
+                        // Check if all 3 lanes are occupied near top (within 100px)
+                        if (((obstacle_y1 < 10'd100 && obstacle_lane1 == 2'd0) ||
+                             (obstacle_y2 < 10'd100 && obstacle_lane2 == 2'd0) ||
+                             (obstacle_y3 < 10'd100 && obstacle_lane3 == 2'd0)) &&
+                            ((obstacle_y1 < 10'd100 && obstacle_lane1 == 2'd1) ||
+                             (obstacle_y2 < 10'd100 && obstacle_lane2 == 2'd1) ||
+                             (obstacle_y3 < 10'd100 && obstacle_lane3 == 2'd1)) &&
+                            ((obstacle_y1 < 10'd100 && obstacle_lane1 == 2'd2) ||
+                             (obstacle_y2 < 10'd100 && obstacle_lane2 == 2'd2) ||
+                             (obstacle_y3 < 10'd100 && obstacle_lane3 == 2'd2))) begin
+                            // All lanes blocked, use middle lane (will create a gap)
+                            obstacle_lane0 <= 2'd1;
+                        end else begin
+                            // Use random lane
+                            obstacle_lane0 <= lfsr[1:0] % 3;
+                        end
+                        score <= score + 16'd1;
                     end
 
-                    // obstacle 1
+                    // Obstacle 1
                     if (obstacle_y1 < SCREEN_BOTTOM_Y + OBSTACLE_HEIGHT) begin
                         obstacle_y1 <= obstacle_y1 + OBSTACLE_STEP;
                     end else begin
-                        obstacle_y1    <= 10'd0;
-                        obstacle_lane1 <= lfsr[3:2] % 3;   // independent random lane 0..2
-                        score          <= score + 16'd1;
+                        obstacle_y1 <= 10'd0;
+                        if (((obstacle_y0 < 10'd100 && obstacle_lane0 == 2'd0) ||
+                             (obstacle_y2 < 10'd100 && obstacle_lane2 == 2'd0) ||
+                             (obstacle_y3 < 10'd100 && obstacle_lane3 == 2'd0)) &&
+                            ((obstacle_y0 < 10'd100 && obstacle_lane0 == 2'd1) ||
+                             (obstacle_y2 < 10'd100 && obstacle_lane2 == 2'd1) ||
+                             (obstacle_y3 < 10'd100 && obstacle_lane3 == 2'd1)) &&
+                            ((obstacle_y0 < 10'd100 && obstacle_lane0 == 2'd2) ||
+                             (obstacle_y2 < 10'd100 && obstacle_lane2 == 2'd2) ||
+                             (obstacle_y3 < 10'd100 && obstacle_lane3 == 2'd2))) begin
+                            obstacle_lane1 <= 2'd1;
+                        end else begin
+                            obstacle_lane1 <= lfsr[3:2] % 3;
+                        end
+                        score <= score + 16'd1;
+                    end
+                    
+                    // Obstacle 2
+                    if (obstacle_y2 < SCREEN_BOTTOM_Y + OBSTACLE_HEIGHT) begin
+                        obstacle_y2 <= obstacle_y2 + OBSTACLE_STEP;
+                    end else begin
+                        obstacle_y2 <= 10'd0;
+                        if (((obstacle_y0 < 10'd100 && obstacle_lane0 == 2'd0) ||
+                             (obstacle_y1 < 10'd100 && obstacle_lane1 == 2'd0) ||
+                             (obstacle_y3 < 10'd100 && obstacle_lane3 == 2'd0)) &&
+                            ((obstacle_y0 < 10'd100 && obstacle_lane0 == 2'd1) ||
+                             (obstacle_y1 < 10'd100 && obstacle_lane1 == 2'd1) ||
+                             (obstacle_y3 < 10'd100 && obstacle_lane3 == 2'd1)) &&
+                            ((obstacle_y0 < 10'd100 && obstacle_lane0 == 2'd2) ||
+                             (obstacle_y1 < 10'd100 && obstacle_lane1 == 2'd2) ||
+                             (obstacle_y3 < 10'd100 && obstacle_lane3 == 2'd2))) begin
+                            obstacle_lane2 <= 2'd1;
+                        end else begin
+                            obstacle_lane2 <= lfsr[5:4] % 3;
+                        end
+                        score <= score + 16'd1;
+                    end
+                    
+                    // Obstacle 3
+                    if (obstacle_y3 < SCREEN_BOTTOM_Y + OBSTACLE_HEIGHT) begin
+                        obstacle_y3 <= obstacle_y3 + OBSTACLE_STEP;
+                    end else begin
+                        obstacle_y3 <= 10'd0;
+                        if (((obstacle_y0 < 10'd100 && obstacle_lane0 == 2'd0) ||
+                             (obstacle_y1 < 10'd100 && obstacle_lane1 == 2'd0) ||
+                             (obstacle_y2 < 10'd100 && obstacle_lane2 == 2'd0)) &&
+                            ((obstacle_y0 < 10'd100 && obstacle_lane0 == 2'd1) ||
+                             (obstacle_y1 < 10'd100 && obstacle_lane1 == 2'd1) ||
+                             (obstacle_y2 < 10'd100 && obstacle_lane2 == 2'd1)) &&
+                            ((obstacle_y0 < 10'd100 && obstacle_lane0 == 2'd2) ||
+                             (obstacle_y1 < 10'd100 && obstacle_lane1 == 2'd2) ||
+                             (obstacle_y2 < 10'd100 && obstacle_lane2 == 2'd2))) begin
+                            obstacle_lane3 <= 2'd1;
+                        end else begin
+                            obstacle_lane3 <= lfsr[7:6] % 3;
+                        end
+                        score <= score + 16'd1;
                     end
                 end
 
@@ -436,7 +567,7 @@ module vga_bitchange(
         end
         else if (is_gameover && collision) begin
             // show collision in red
-            if (in_boat_area || in_rock0_area || in_rock1_area)
+            if (in_boat_area || in_rock0_area || in_rock1_area || in_rock2_area || in_rock3_area)
                 rgb = RED;
             else if (in_sand_area)
                 rgb = SAND;       // sand border even in gameover
@@ -457,10 +588,16 @@ module vga_bitchange(
                     rgb = BLUE;   // lane dividers
 
                 // Draw rock sprites instead of green rectangles
-                if (in_rock0_area)
+                // Make background color transparent (show water behind rock)
+                // Priority: rock0 > rock1 > rock2 > rock3 (draw in order)
+                if (in_rock0_area && !rock0_transparent)
                     rgb = rock0_pixel;
-                else if (in_rock1_area)
+                else if (in_rock1_area && !rock1_transparent)
                     rgb = rock1_pixel;
+                else if (in_rock2_area && !rock2_transparent)
+                    rgb = rock2_pixel;
+                else if (in_rock3_area && !rock3_transparent)
+                    rgb = rock3_pixel;
 
               //  if (in_player_rect)
                 //    rgb = WHITE;      // player
