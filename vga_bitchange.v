@@ -20,7 +20,7 @@ module vga_bitchange(
     localparam GREEN  = 12'b0000_1111_0000;
     localparam GRAY   = 12'b1000_1000_1000;
     localparam BLUE   = 12'h468;
-    localparam SAND   = 12'b1101_1011_1001;  // sand color (12-bit RGB: D B 9)
+    localparam SAND   = 12'b1110_1100_1010;  // sand color (12-bit RGB: E C A) - light beige
 
     // Screen & object sizes
     localparam SCREEN_WIDTH      = 10'd640;
@@ -34,16 +34,26 @@ module vga_bitchange(
     localparam OBSTACLE_HEIGHT   = 10'd80;
     localparam OBSTACLE_HALF_W   = 10'd40;   // total width = 80
 
+    // VGA visible area offset (from display_controller: hCount 144-783 is visible)
+    localparam H_VISIBLE_START   = 10'd144;  // hCount where visible area starts
+    localparam V_VISIBLE_START   = 10'd35;   // vCount where visible area starts
+    
     // Lane spacing and playable area (centered on 640px screen)
+    // Screen positions: 0-639, but hCount values: 144-783
     localparam LANE_SPACING      = 10'd140;  // spacing between lane centers
     localparam PLAYABLE_WIDTH    = 10'd360;  // total width of 3 lanes area
-    localparam PLAYABLE_LEFT     = 10'd140;  // left edge of playable area
-    localparam PLAYABLE_RIGHT    = 10'd500;  // right edge of playable area
+    localparam PLAYABLE_LEFT     = 10'd140;  // left edge of playable area (screen pos)
+    localparam PLAYABLE_RIGHT    = 10'd500;  // right edge of playable area (screen pos)
+    
+    // hCount values for sand borders (accounting for visible area offset)
+    localparam SAND_LEFT_HCOUNT   = H_VISIBLE_START + PLAYABLE_LEFT;   // 144 + 140 = 284
+    localparam SAND_RIGHT_HCOUNT  = H_VISIBLE_START + PLAYABLE_RIGHT;  // 144 + 500 = 644
 
-    // Lane centers in X (centered on screen)
-    localparam LANE1_X_CENTER    = 10'd320;  // center lane (screen center)
-    localparam LANE0_X_CENTER    = 10'd180;  // left lane
-    localparam LANE2_X_CENTER    = 10'd460;  // right lane
+    // Lane centers in X (in hCount coordinates: screen_pos + H_VISIBLE_START)
+    // Screen positions: 180, 320, 460 -> hCount: 324, 464, 604
+    localparam LANE0_X_CENTER    = H_VISIBLE_START + 10'd180;  // left lane (hCount = 324)
+    localparam LANE1_X_CENTER    = H_VISIBLE_START + 10'd320;  // center lane (hCount = 464)
+    localparam LANE2_X_CENTER    = H_VISIBLE_START + 10'd460;  // right lane (hCount = 604)
 
     // movement speeds (pixels per slow_tick)
     localparam OBSTACLE_STEP = 10'd4;  // obstacle speed
@@ -327,7 +337,8 @@ module vga_bitchange(
         (vCount < SCREEN_BOTTOM_Y);
 
     // Sand border areas (outside the 3 lanes)
-    wire in_sand_area = (hCount < PLAYABLE_LEFT) || (hCount >= PLAYABLE_RIGHT);
+    // hCount values: visible area is 144-783, so sand is before 284 and after 644
+    wire in_sand_area = (hCount < SAND_LEFT_HCOUNT) || (hCount >= SAND_RIGHT_HCOUNT);
 
     always @(*) begin
         if (!bright) begin
