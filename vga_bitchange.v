@@ -20,8 +20,10 @@ module vga_bitchange(
     localparam GREEN  = 12'b0000_1111_0000;
     localparam GRAY   = 12'b1000_1000_1000;
     localparam BLUE   = 12'h468;
+    localparam SAND   = 12'b1101_1011_1001;  // sand color (12-bit RGB: D B 9)
 
     // Screen & object sizes
+    localparam SCREEN_WIDTH      = 10'd640;
     localparam SCREEN_BOTTOM_Y   = 10'd479;
 
     localparam PLAYER_Y_START    = 10'd400;
@@ -32,10 +34,16 @@ module vga_bitchange(
     localparam OBSTACLE_HEIGHT   = 10'd80;
     localparam OBSTACLE_HALF_W   = 10'd40;   // total width = 80
 
-    // Lane centers in X (tweak as needed)
-    localparam LANE0_X_CENTER    = 10'd220;
-    localparam LANE1_X_CENTER    = 10'd360;
-    localparam LANE2_X_CENTER    = 10'd500;
+    // Lane spacing and playable area (centered on 640px screen)
+    localparam LANE_SPACING      = 10'd140;  // spacing between lane centers
+    localparam PLAYABLE_WIDTH    = 10'd360;  // total width of 3 lanes area
+    localparam PLAYABLE_LEFT     = 10'd140;  // left edge of playable area
+    localparam PLAYABLE_RIGHT    = 10'd500;  // right edge of playable area
+
+    // Lane centers in X (centered on screen)
+    localparam LANE1_X_CENTER    = 10'd320;  // center lane (screen center)
+    localparam LANE0_X_CENTER    = 10'd180;  // left lane
+    localparam LANE2_X_CENTER    = 10'd460;  // right lane
 
     // movement speeds (pixels per slow_tick)
     localparam OBSTACLE_STEP = 10'd4;  // obstacle speed
@@ -318,6 +326,9 @@ module vga_bitchange(
          (hCount == LANE2_X_CENTER)) &&
         (vCount < SCREEN_BOTTOM_Y);
 
+    // Sand border areas (outside the 3 lanes)
+    wire in_sand_area = (hCount < PLAYABLE_LEFT) || (hCount >= PLAYABLE_RIGHT);
+
     always @(*) begin
         if (!bright) begin
             rgb = BLACK;          // outside visible area
@@ -326,25 +337,34 @@ module vga_bitchange(
             // show collision in red
             if (in_player_rect || in_obstacle_rect)
                 rgb = RED;
+            else if (in_sand_area)
+                rgb = SAND;       // sand border even in gameover
             else
                 rgb = BLUE;
         end
         else begin
             // normal drawing
-            rgb = BLUE;          // background
+            // Draw sand border first (outside playable area)
+            if (in_sand_area) begin
+                rgb = SAND;       // sand-colored edge
+            end
+            else begin
+                // Inside playable area - draw game elements
+                rgb = BLUE;       // background (water)
 
-            if (in_lane_lines)
-                rgb = BLUE;       // lane dividers
+                if (in_lane_lines)
+                    rgb = BLUE;   // lane dividers
 
-            if (in_obstacle_rect)
-                rgb = GREEN;      // obstacle
+                if (in_obstacle_rect)
+                    rgb = GREEN;  // obstacle
 
-          //  if (in_player_rect)
-            //    rgb = WHITE;      // player
+              //  if (in_player_rect)
+                //    rgb = WHITE;      // player
 
-           // BOAT SPRITE: draw over everything else
-            if (in_boat_area)
-                rgb = boat_pixel;
+               // BOAT SPRITE: draw over everything else
+                if (in_boat_area)
+                    rgb = boat_pixel;
+            end
         end
     end
 
