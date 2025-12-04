@@ -34,10 +34,10 @@ module vga_bitchange(
     localparam OBSTACLE_HEIGHT   = 10'd80;
     localparam OBSTACLE_HALF_W   = 10'd40;   // total width = 80
     
-    // Rock sprite dimensions (should match obstacle size)
-    localparam ROCK_WIDTH   = 10'd80;
-    localparam ROCK_HEIGHT  = 10'd80;
-    localparam ROCK_HALF_W  = 10'd40;
+    // Rock sprite dimensions (rock ROM uses [5:0] addresses = 64x64 pixels)
+    localparam ROCK_WIDTH   = 10'd64;
+    localparam ROCK_HEIGHT  = 10'd64;
+    localparam ROCK_HALF_W  = 10'd32;
 
     // VGA visible area offset (from display_controller: hCount 144-783 is visible)
     localparam H_VISIBLE_START   = 10'd144;  // hCount where visible area starts
@@ -121,12 +121,12 @@ module vga_bitchange(
                          (vCount >= rock1_y_start && vCount < rock1_y_end);
     
     // Local sprite coordinates for rock ROMs (row, col addresses)
-    // Rock ROM uses [8:0] addresses (9 bits = up to 512 pixels)
+    // Rock ROM uses [5:0] addresses (6 bits = 64x64 pixels)
     // Calculate sprite-local coordinates when in rock area
-    wire [8:0] rock0_sx = (hCount - rock0_x_start);  // column index (0-79 for 80px width)
-    wire [8:0] rock0_sy = (vCount - rock0_y_start);  // row index (0-79 for 80px height)
-    wire [8:0] rock1_sx = (hCount - rock1_x_start);
-    wire [8:0] rock1_sy = (vCount - rock1_y_start);
+    wire [5:0] rock0_sx = (hCount - rock0_x_start);  // column index (0-63 for 64px width)
+    wire [5:0] rock0_sy = (vCount - rock0_y_start);  // row index (0-63 for 64px height)
+    wire [5:0] rock1_sx = (hCount - rock1_x_start);
+    wire [5:0] rock1_sy = (vCount - rock1_y_start);
     
     // Rock ROM pixel outputs (12-bit RGB color data)
     wire [11:0] rock0_pixel, rock1_pixel;
@@ -230,26 +230,25 @@ module vga_bitchange(
     );
 
     // --------------- ROCK SPRITES -----------------------
-    // COMMENTED OUT: Rock sprite ROMs (very large, causes slow synthesis)
     // Simple ROM sprite lookup (following Xilinx BRAM ROM pattern from article)
     // Single static sprite - no animation, just direct pixel lookup
     // Module: rock_rom (defined in rock_12_bit_rom.v)
-    // Inputs: clk, row[8:0], col[8:0]
+    // Inputs: clk, row[5:0], col[5:0] - 64x64 pixel sprite
     // Output: color_data[11:0] - 12-bit RGB (r3r2r1r0 g3g2g1g0 b3b2b1b0)
     
-    // rock_rom rock0_rom (
-    //     .clk(clk),
-    //     .row(rock0_sy),      // sprite row coordinate (0-79)
-    //     .col(rock0_sx),      // sprite column coordinate (0-79)
-    //     .color_data(rock0_pixel)
-    // );
+    rock_rom rock0_rom (
+        .clk(clk),
+        .row(rock0_sy),      // sprite row coordinate (0-63)
+        .col(rock0_sx),      // sprite column coordinate (0-63)
+        .color_data(rock0_pixel)
+    );
     
-    // rock_rom rock1_rom (
-    //     .clk(clk),
-    //     .row(rock1_sy),
-    //     .col(rock1_sx),
-    //     .color_data(rock1_pixel)
-    // );
+    rock_rom rock1_rom (
+        .clk(clk),
+        .row(rock1_sy),
+        .col(rock1_sx),
+        .color_data(rock1_pixel)
+    );
 
 
     // --------------- INITIAL STATE ----------------------
@@ -279,23 +278,9 @@ module vga_bitchange(
     end
 
     // --------------- COLLISION DETECTION ---------------------- 
-    // Using rectangle collision detection (faster than sprite-based)
-    // COMMENTED OUT: Rock sprite collision (uncomment when using rock sprites)
-    // wire collision0 = in_rock0_area && in_boat_area;
-    // wire collision1 = in_rock1_area && in_boat_area;
-
-    // Rectangle-based collision detection
-    wire x_overlap0 = (player_x_end   >= obs0_x_start) &&
-                    (player_x_start <= obs0_x_end);
-    wire y_overlap0 = (PLAYER_Y_END   >= obs0_y_start) &&
-                    (PLAYER_Y_START <= obs0_y_end);
-    wire collision0 = x_overlap0 && y_overlap0;
-
-    wire x_overlap1 = (player_x_end   >= obs1_x_start) &&
-                    (player_x_start <= obs1_x_end);
-    wire y_overlap1 = (PLAYER_Y_END   >= obs1_y_start) &&
-                    (PLAYER_Y_START <= obs1_y_end);
-    wire collision1 = x_overlap1 && y_overlap1;
+    // Use rock sprite areas for collision detection (more accurate than rectangles)
+    wire collision0 = in_rock0_area && in_boat_area;
+    wire collision1 = in_rock1_area && in_boat_area;
 
     // Final collision flag
     wire collision = collision0 || collision1;
@@ -451,9 +436,7 @@ module vga_bitchange(
         end
         else if (is_gameover && collision) begin
             // show collision in red
-            // COMMENTED OUT: Rock sprite areas (uncomment when using rock sprites)
-            // if (in_boat_area || in_rock0_area || in_rock1_area)
-            if (in_boat_area || in_obstacle_rect)
+            if (in_boat_area || in_rock0_area || in_rock1_area)
                 rgb = RED;
             else if (in_sand_area)
                 rgb = SAND;       // sand border even in gameover
@@ -473,15 +456,11 @@ module vga_bitchange(
                 if (in_lane_lines)
                     rgb = BLUE;   // lane dividers
 
-                // Draw green rectangles for obstacles (faster than rock sprites)
-                // COMMENTED OUT: Rock sprite drawing (uncomment when using rock sprites)
-                // if (in_rock0_area)
-                //     rgb = rock0_pixel;
-                // else if (in_rock1_area)
-                //     rgb = rock1_pixel;
-                
-                if (in_obstacle_rect)
-                    rgb = GREEN;  // obstacle (green rectangle)
+                // Draw rock sprites instead of green rectangles
+                if (in_rock0_area)
+                    rgb = rock0_pixel;
+                else if (in_rock1_area)
+                    rgb = rock1_pixel;
 
               //  if (in_player_rect)
                 //    rgb = WHITE;      // player
