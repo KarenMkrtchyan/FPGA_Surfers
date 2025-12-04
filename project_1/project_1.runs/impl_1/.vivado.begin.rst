@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<ProcessHandle Version="1" Minor="0">
+    <Process Command="vivado.bat" Owner="kmkrtchy" Host="GDESK-34" Pid="6820" HostCore="4" HostMemory="034358743040">
+    </Process>
+</ProcessHandle>
+<?xml version="1.0"?>
+<ProcessHandle Version="1" Minor="0">
+    <Process Command="vivado.bat" Owner="kmkrtchy" Host="GDESK-34" Pid="1584" HostCore="4" HostMemory="034358743040">
+    </Process>
+</ProcessHandle>
+<?xml version="1.0"?>
+<ProcessHandle Version="1" Minor="0">
+    <Process Command="vivado.bat" Owner="kmkrtchy" Host="GDESK-34" Pid="9964" HostCore="4" HostMemory="034358743040">
+    </Process>
+</ProcessHandle>
+<?xml version="1.0"?>
+<ProcessHandle Version="1" Minor="0">
+    <Process Command="vivado.bat" Owner="kmkrtchy" Host="GDESK-34" Pid="2492" HostCore="4" HostMemory="034358743040">
+    </Process>
+</ProcessHandle>
+<?xml version="1.0"?>
+<ProcessHandle Version="1" Minor="0">
+    <Process Command="vivado.bat" Owner="kmkrtchy" Host="GDESK-34" Pid="15136" HostCore="4" HostMemory="034358743040">
+    </Process>
+</ProcessHandle>
+<?xml version="1.0"?>
+<ProcessHandle Version="1" Minor="0">
+    <Process Command="vivado.bat" Owner="kmkrtchy" Host="GDESK-34" Pid="14524" HostCore="4" HostMemory="034358743040">
+    </Process>
+</ProcessHandle>
+<?xml version="1.0"?>
+<ProcessHandle Version="1" Minor="0">
+    <Process Command="vivado.bat" Owner="kmkrtchy" Host="GDESK-34" Pid="2728" HostCore="4" HostMemory="034358743040">
+    </Process>
+</ProcessHandle>

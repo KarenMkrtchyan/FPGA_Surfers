@@ -1,0 +1,142 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+---------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2024.1 (win64) Build 5076996 Wed May 22 18:37:14 MDT 2024
+| Date         : Wed Dec  3 22:27:07 2025
+| Host         : GDESK-34 running 64-bit major release  (build 9200)
+| Command      : report_control_sets -verbose -file vga_top_control_sets_placed.rpt
+| Design       : vga_top
+| Device       : xc7a100t
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Control Set Information
+
+Table of Contents
+-----------------
+1. Summary
+2. Histogram
+3. Flip-Flop Distribution
+4. Detailed Control Set Information
+
+1. Summary
+----------
+
++----------------------------------------------------------+-------+
+|                          Status                          | Count |
++----------------------------------------------------------+-------+
+| Total control sets                                       |    64 |
+|    Minimum number of control sets                        |    64 |
+|    Addition due to synthesis replication                 |     0 |
+|    Addition due to physical synthesis replication        |     0 |
+| Unused register locations in slices containing registers |   354 |
++----------------------------------------------------------+-------+
+* Control sets can be merged at opt_design using control_set_merge or merge_equivalent_drivers
+** Run report_qor_suggestions for automated merging and remapping suggestions
+
+
+2. Histogram
+------------
+
++--------------------+-------+
+|       Fanout       | Count |
++--------------------+-------+
+| Total control sets |    64 |
+| >= 0 to < 4        |    44 |
+| >= 4 to < 6        |     6 |
+| >= 6 to < 8        |     1 |
+| >= 8 to < 10       |     1 |
+| >= 10 to < 12      |     4 |
+| >= 12 to < 14      |     0 |
+| >= 14 to < 16      |     1 |
+| >= 16              |     7 |
++--------------------+-------+
+* Control sets can be remapped at either synth_design or opt_design
+
+
+3. Flip-Flop Distribution
+-------------------------
+
++--------------+-----------------------+------------------------+-----------------+--------------+
+| Clock Enable | Synchronous Set/Reset | Asynchronous Set/Reset | Total Registers | Total Slices |
++--------------+-----------------------+------------------------+-----------------+--------------+
+| No           | No                    | No                     |             251 |          129 |
+| No           | No                    | Yes                    |               0 |            0 |
+| No           | Yes                   | No                     |             163 |          114 |
+| Yes          | No                    | No                     |               0 |            0 |
+| Yes          | No                    | Yes                    |               0 |            0 |
+| Yes          | Yes                   | No                     |             128 |           39 |
++--------------+-----------------------+------------------------+-----------------+--------------+
+
+
+4. Detailed Control Set Information
+-----------------------------------
+
++-------------------------------------------------------+-----------------------------------+-------------------------------------------------------+------------------+----------------+--------------+
+|                      Clock Signal                     |           Enable Signal           |                    Set/Reset Signal                   | Slice Load Count | Bel Load Count | Bels / Slice |
++-------------------------------------------------------+-----------------------------------+-------------------------------------------------------+------------------+----------------+--------------+
+|  vbc/rock1_rom/i_/color_data_reg[2]_i_2_n_0           |                                   | vbc/rock1_rom/i_/color_data_reg[2]_i_3_n_0            |                1 |              1 |         1.00 |
+|  vbc/rock0_rom/i_/color_data_reg[2]_i_2_n_0           |                                   | vbc/rock0_rom/i_/color_data_reg[2]_i_3_n_0            |                1 |              1 |         1.00 |
+|  vbc/rock0_rom/i_/color_data_reg[3]_i_2_n_0           |                                   | vbc/rock0_rom/i_/color_data_reg[3]_i_3_n_0            |                1 |              1 |         1.00 |
+|  vbc/rock0_rom/i_/color_data_reg[8]_i_2_n_0           |                                   | vbc/rock0_rom/color_data1411_out                      |                1 |              1 |         1.00 |
+|  vbc/rock2_rom/i_/color_data_reg[2]_i_2_n_0           |                                   | vbc/rock2_rom/i_/color_data_reg[2]_i_3_n_0            |                1 |              1 |         1.00 |
+|  vbc/boat_animation/rom0/E[2]                         |                                   | vbc/boat_animation/rom0/color_data_reg[8]_i_2__3_n_0  |                1 |              1 |         1.00 |
+|  vbc/boat_animation/rom7/col_reg_reg[5][0]            |                                   | vbc/boat_animation/rom0/color_data_reg[4]_i_3__3_n_0  |                1 |              1 |         1.00 |
+|  vbc/boat_animation/rom0/E[4]                         |                                   | vbc/boat_animation/rom0/color_data_reg[11]_i_2__2_n_0 |                1 |              1 |         1.00 |
+|  vbc/rock2_rom/i_/color_data_reg[3]_i_2_n_0           |                                   | vbc/rock2_rom/i_/color_data_reg[3]_i_3_n_0            |                1 |              1 |         1.00 |
+|  vbc/rock1_rom/i_/color_data_reg[11]_i_2_n_0          |                                   | vbc/rock1_rom/i_/color_data_reg[11]_i_3_n_0           |                1 |              1 |         1.00 |
+|  vbc/rock3_rom/i_/color_data_reg[8]_i_2_n_0           |                                   | vbc/rock3_rom/color_data1411_out                      |                1 |              1 |         1.00 |
+|  vbc/rock3_rom/i_/color_data_reg[3]_i_2_n_0           |                                   | vbc/rock3_rom/i_/color_data_reg[3]_i_3_n_0            |                1 |              1 |         1.00 |
+|  vbc/rock3_rom/i_/color_data_reg[2]_i_2_n_0           |                                   | vbc/rock3_rom/i_/color_data_reg[2]_i_3_n_0            |                1 |              1 |         1.00 |
+|  vbc/boat_animation/rom0/color_data_reg[0]_i_2__5_n_0 |                                   | vbc/boat_animation/rom0/AS[0]                         |                1 |              1 |         1.00 |
+|  vbc/rock1_rom/i_/color_data_reg[3]_i_2_n_0           |                                   | vbc/rock1_rom/i_/color_data_reg[3]_i_3_n_0            |                1 |              1 |         1.00 |
+|  vbc/rock1_rom/i_/color_data_reg[8]_i_2_n_0           |                                   | vbc/rock1_rom/color_data1411_out                      |                1 |              1 |         1.00 |
+|  vbc/rock2_rom/i_/color_data_reg[11]_i_2_n_0          |                                   | vbc/rock2_rom/i_/color_data_reg[11]_i_3_n_0           |                1 |              1 |         1.00 |
+|  vbc/rock0_rom/i_/color_data_reg[11]_i_2_n_0          |                                   | vbc/rock0_rom/i_/color_data_reg[11]_i_3_n_0           |                1 |              1 |         1.00 |
+|  dc/clk                                               |                                   |                                                       |                1 |              1 |         1.00 |
+|  vbc/rock3_rom/i_/color_data_reg[11]_i_2_n_0          |                                   | vbc/rock3_rom/i_/color_data_reg[11]_i_3_n_0           |                1 |              1 |         1.00 |
+|  vbc/rock2_rom/i_/color_data_reg[8]_i_2_n_0           |                                   | vbc/rock2_rom/color_data1411_out                      |                1 |              1 |         1.00 |
+|  dc/pulse                                             |                                   |                                                       |                1 |              1 |         1.00 |
+|  vbc/boat_animation/rom0/col_reg_reg[5]_2[2]          |                                   | vbc/boat_animation/rom0/AR[4]                         |                1 |              1 |         1.00 |
+|  vbc/boat_animation/rom0/col_reg_reg[5]_3[1]          |                                   | vbc/boat_animation/rom0/row_reg_reg[5]_1[0]           |                1 |              1 |         1.00 |
+|  vbc/boat_animation/rom0/col_reg_reg[5]_2[0]          |                                   | vbc/boat_animation/rom0/col_reg_reg[3]_rep__1_1[1]    |                1 |              1 |         1.00 |
+|  vbc/boat_animation/rom0/col_reg_reg[4]_0[0]          |                                   | vbc/boat_animation/rom0/col_reg_reg[3]_rep__1_1[1]    |                1 |              2 |         2.00 |
+|  vbc/rock3_rom/i_/color_data_reg[1]_i_2_n_0           |                                   | vbc/rock3_rom/i_/color_data_reg[1]_i_3_n_0            |                1 |              2 |         2.00 |
+|  vbc/rock2_rom/i_/color_data_reg[1]_i_2_n_0           |                                   | vbc/rock2_rom/i_/color_data_reg[1]_i_3_n_0            |                1 |              2 |         2.00 |
+|  vbc/boat_animation/rom0/E[2]                         |                                   | vbc/boat_animation/rom0/col_reg_reg[5]_1[1]           |                1 |              2 |         2.00 |
+|  vbc/rock1_rom/i_/color_data_reg[1]_i_2_n_0           |                                   | vbc/rock1_rom/i_/color_data_reg[1]_i_3_n_0            |                1 |              2 |         2.00 |
+|  vbc/rock0_rom/i_/color_data_reg[1]_i_2_n_0           |                                   | vbc/rock0_rom/i_/color_data_reg[1]_i_3_n_0            |                1 |              2 |         2.00 |
+|  vbc/boat_animation/rom0/col_reg_reg[5]_2[2]          |                                   | vbc/boat_animation/rom0/col_reg_reg[5]_1[3]           |                1 |              2 |         2.00 |
+|  vbc/boat_animation/rom0/col_reg_reg[5]_9[0]          |                                   | vbc/boat_animation/rom0/col_reg_reg[4]_rep_2[0]       |                2 |              2 |         1.00 |
+|  vbc/boat_animation/rom0/col_reg_reg[5]_8[0]          |                                   | vbc/boat_animation/rom0/AR[1]                         |                2 |              2 |         1.00 |
+|  vbc/rock3_rom/i_/color_data_reg[10]_i_2_n_0          |                                   | vbc/rock3_rom/i_/color_data_reg[10]_i_3_n_0           |                3 |              3 |         1.00 |
+|  vbc/rock3_rom/i_/color_data_reg[9]_i_2_n_0           |                                   | vbc/rock3_rom/i_/color_data_reg[9]_i_3_n_0            |                2 |              3 |         1.50 |
+|  vbc/boat_animation/rom0/E[4]                         |                                   | vbc/boat_animation/rom0/AR[4]                         |                1 |              3 |         3.00 |
+|  vbc/boat_animation/rom0/E[0]                         |                                   | vbc/boat_animation/rom0/AR[0]                         |                3 |              3 |         1.00 |
+|  vbc/rock0_rom/i_/color_data_reg[9]_i_2_n_0           |                                   | vbc/rock0_rom/i_/color_data_reg[9]_i_3_n_0            |                1 |              3 |         3.00 |
+|  vbc/rock1_rom/i_/color_data_reg[9]_i_2_n_0           |                                   | vbc/rock1_rom/i_/color_data_reg[9]_i_3_n_0            |                1 |              3 |         3.00 |
+|  vbc/rock0_rom/i_/color_data_reg[10]_i_2_n_0          |                                   | vbc/rock0_rom/i_/color_data_reg[10]_i_3_n_0           |                2 |              3 |         1.50 |
+|  vbc/rock2_rom/i_/color_data_reg[10]_i_2_n_0          |                                   | vbc/rock2_rom/i_/color_data_reg[10]_i_3_n_0           |                2 |              3 |         1.50 |
+|  vbc/rock1_rom/i_/color_data_reg[10]_i_2_n_0          |                                   | vbc/rock1_rom/i_/color_data_reg[10]_i_3_n_0           |                3 |              3 |         1.00 |
+|  vbc/rock2_rom/i_/color_data_reg[9]_i_2_n_0           |                                   | vbc/rock2_rom/i_/color_data_reg[9]_i_3_n_0            |                1 |              3 |         3.00 |
+|  vbc/boat_animation/rom0/E[3]                         |                                   | vbc/boat_animation/rom0/color_data_reg[10]_i_2__3_n_0 |                4 |              4 |         1.00 |
+|  vbc/boat_animation/rom0/col_reg_reg[5]_8[0]          |                                   | vbc/boat_animation/rom0/col_reg_reg[5]_1[0]           |                3 |              4 |         1.33 |
+|  vbc/boat_animation/rom0/col_reg_reg[5]_3[0]          |                                   | vbc/boat_animation/rom0/col_reg_reg[3]_rep__1_1[0]    |                3 |              4 |         1.33 |
+|  vbc/boat_animation/rom0/color_data_reg[7]_i_2__5_n_0 |                                   | vbc/boat_animation/rom0/col_reg_reg[5]_1[0]           |                4 |              4 |         1.00 |
+|  vbc/boat_animation/rom0/E[2]                         |                                   | vbc/boat_animation/rom0/AR[2]                         |                2 |              5 |         2.50 |
+|  vbc/boat_animation/rom0/col_reg_reg[5]_2[1]          |                                   | vbc/boat_animation/rom0/AR[1]                         |                5 |              5 |         1.00 |
+|  vbc/boat_animation/rom0/col_reg_reg[5]_3[2]          |                                   | vbc/boat_animation/rom0/AS[0]                         |                5 |              6 |         1.20 |
+|  vbc/boat_animation/rom0/E[3]                         |                                   | vbc/boat_animation/rom0/col_reg_reg[5]_1[2]           |                6 |              8 |         1.33 |
+|  ClkPort_IBUF_BUFG                                    | vbc/car_x                         | vbc/lane0                                             |                5 |             10 |         2.00 |
+|  dc/clk                                               |                                   | dc/hCount[9]_i_1_n_0                                  |                2 |             10 |         5.00 |
+|  ClkPort_IBUF_BUFG                                    |                                   | vbc/lane0                                             |                4 |             10 |         2.50 |
+|  dc/clk                                               | dc/hCount[9]_i_1_n_0              | dc/vCount[9]_i_1_n_0                                  |                2 |             10 |         5.00 |
+|  vbc/boat_animation/rom0/E[3]                         |                                   | vbc/boat_animation/rom0/AR[3]                         |                9 |             14 |         1.56 |
+|  ClkPort_IBUF_BUFG                                    | vbc/score[0]_i_1_n_0              | vbc/lane0                                             |                4 |             16 |         4.00 |
+|  vbc/boat_animation/rom0/E[1]                         |                                   | vbc/boat_animation/rom0/AR[1]                         |               14 |             18 |         1.29 |
+|  ClkPort_IBUF_BUFG                                    | vbc/debounce_counter_C[0]_i_2_n_0 | vbc/debounce_counter_C[0]_i_1_n_0                     |                5 |             20 |         4.00 |
+|  ClkPort_IBUF_BUFG                                    | vbc/debounce_counter_R[0]_i_2_n_0 | vbc/debounce_counter_R[0]_i_1_n_0                     |                5 |             20 |         4.00 |
+|  ClkPort_IBUF_BUFG                                    | vbc/debounce_counter_L[0]_i_2_n_0 | vbc/debounce_counter_L[0]_i_1_n_0                     |                5 |             20 |         4.00 |
+|  ClkPort_IBUF_BUFG                                    | vbc/obstacle_y0                   | vbc/lane0                                             |               13 |             32 |         2.46 |
+|  ClkPort_IBUF_BUFG                                    |                                   |                                                       |              127 |            249 |         1.96 |
++-------------------------------------------------------+-----------------------------------+-------------------------------------------------------+------------------+----------------+--------------+
+
+
