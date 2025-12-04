@@ -33,6 +33,11 @@ module vga_bitchange(
 
     localparam OBSTACLE_HEIGHT   = 10'd80;
     localparam OBSTACLE_HALF_W   = 10'd40;   // total width = 80
+    
+    // Rock sprite dimensions (should match obstacle size)
+    localparam ROCK_WIDTH   = 10'd80;
+    localparam ROCK_HEIGHT  = 10'd80;
+    localparam ROCK_HALF_W  = 10'd40;
 
     // VGA visible area offset (from display_controller: hCount 144-783 is visible)
     localparam H_VISIBLE_START   = 10'd144;  // hCount where visible area starts
@@ -81,10 +86,6 @@ module vga_bitchange(
     // Double obstacle
     reg [1:0] obstacle_lane0, obstacle_lane1;
     reg [9:0] obstacle_y0,    obstacle_y1;
-    
-    // Rock sprite outputs
-    wire [11:0] rock0_pixel, rock1_pixel;
-    wire        in_rock0_area, in_rock1_area;                       
 
     // Game state
     reg [1:0] game_state = ST_START;
@@ -102,6 +103,31 @@ module vga_bitchange(
         (obstacle_lane1 == 2'd0) ? LANE0_X_CENTER :
         (obstacle_lane1 == 2'd1) ? LANE1_X_CENTER :
                                 LANE2_X_CENTER;
+    
+    // Rock sprite areas and pixels (defined after obstacle centers)
+    wire [9:0] rock0_x_start = obs0_x_center - ROCK_HALF_W;
+    wire [9:0] rock0_x_end   = obs0_x_center + ROCK_HALF_W;
+    wire [9:0] rock0_y_start = obstacle_y0;
+    wire [9:0] rock0_y_end   = obstacle_y0 + ROCK_HEIGHT;
+    
+    wire [9:0] rock1_x_start = obs1_x_center - ROCK_HALF_W;
+    wire [9:0] rock1_x_end   = obs1_x_center + ROCK_HALF_W;
+    wire [9:0] rock1_y_start = obstacle_y1;
+    wire [9:0] rock1_y_end   = obstacle_y1 + ROCK_HEIGHT;
+    
+    wire in_rock0_area = (hCount >= rock0_x_start && hCount < rock0_x_end) &&
+                         (vCount >= rock0_y_start && vCount < rock0_y_end);
+    wire in_rock1_area = (hCount >= rock1_x_start && hCount < rock1_x_end) &&
+                         (vCount >= rock1_y_start && vCount < rock1_y_end);
+    
+    // Local sprite coordinates for rock ROMs
+    wire [8:0] rock0_sx = (hCount - rock0_x_start);
+    wire [8:0] rock0_sy = (vCount - rock0_y_start);
+    wire [8:0] rock1_sx = (hCount - rock1_x_start);
+    wire [8:0] rock1_sy = (vCount - rock1_y_start);
+    
+    // Rock ROM pixel outputs
+    wire [11:0] rock0_pixel, rock1_pixel;
 
     // Player X-interval
     wire [9:0] player_x_start = car_x - PLAYER_HALF_WIDTH;
@@ -153,25 +179,20 @@ module vga_bitchange(
     );
 
     // --------------- ROCK SPRITES -----------------------
+    // Direct ROM instantiations (single static sprite, no animation)
     
-    rock_anim rock0_animation (
+    rock_rom rock0_rom (
         .clk(clk),
-        .rock_x_center(obs0_x_center),
-        .rock_y_top(obstacle_y0),
-        .hCount(hCount),
-        .vCount(vCount),
-        .rock_pixel(rock0_pixel),
-        .in_rock_area(in_rock0_area)
+        .row(rock0_sy),
+        .col(rock0_sx),
+        .color_data(rock0_pixel)
     );
     
-    rock_anim rock1_animation (
+    rock_rom rock1_rom (
         .clk(clk),
-        .rock_x_center(obs1_x_center),
-        .rock_y_top(obstacle_y1),
-        .hCount(hCount),
-        .vCount(vCount),
-        .rock_pixel(rock1_pixel),
-        .in_rock_area(in_rock1_area)
+        .row(rock1_sy),
+        .col(rock1_sx),
+        .color_data(rock1_pixel)
     );
 
 
