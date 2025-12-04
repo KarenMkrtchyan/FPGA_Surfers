@@ -120,13 +120,15 @@ module vga_bitchange(
     wire in_rock1_area = (hCount >= rock1_x_start && hCount < rock1_x_end) &&
                          (vCount >= rock1_y_start && vCount < rock1_y_end);
     
-    // Local sprite coordinates for rock ROMs
-    wire [8:0] rock0_sx = (hCount - rock0_x_start);
-    wire [8:0] rock0_sy = (vCount - rock0_y_start);
+    // Local sprite coordinates for rock ROMs (row, col addresses)
+    // Rock ROM uses [8:0] addresses (9 bits = up to 512 pixels)
+    // Calculate sprite-local coordinates when in rock area
+    wire [8:0] rock0_sx = (hCount - rock0_x_start);  // column index (0-79 for 80px width)
+    wire [8:0] rock0_sy = (vCount - rock0_y_start);  // row index (0-79 for 80px height)
     wire [8:0] rock1_sx = (hCount - rock1_x_start);
     wire [8:0] rock1_sy = (vCount - rock1_y_start);
     
-    // Rock ROM pixel outputs
+    // Rock ROM pixel outputs (12-bit RGB color data)
     wire [11:0] rock0_pixel, rock1_pixel;
 
     // Player X-interval
@@ -179,12 +181,16 @@ module vga_bitchange(
     );
 
     // --------------- ROCK SPRITES -----------------------
-    // Direct ROM instantiations (single static sprite, no animation)
+    // Simple ROM sprite lookup (following Xilinx BRAM ROM pattern from article)
+    // Single static sprite - no animation, just direct pixel lookup
+    // Module: rock_rom (defined in rock_12_bit_rom.v)
+    // Inputs: clk, row[8:0], col[8:0]
+    // Output: color_data[11:0] - 12-bit RGB (r3r2r1r0 g3g2g1g0 b3b2b1b0)
     
     rock_rom rock0_rom (
         .clk(clk),
-        .row(rock0_sy),
-        .col(rock0_sx),
+        .row(rock0_sy),      // sprite row coordinate (0-79)
+        .col(rock0_sx),      // sprite column coordinate (0-79)
         .color_data(rock0_pixel)
     );
     
