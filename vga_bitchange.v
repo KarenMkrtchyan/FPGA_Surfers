@@ -80,7 +80,11 @@ module vga_bitchange(
 
     // Double obstacle
     reg [1:0] obstacle_lane0, obstacle_lane1;
-    reg [9:0] obstacle_y0,    obstacle_y1;                       
+    reg [9:0] obstacle_y0,    obstacle_y1;
+    
+    // Rock sprite outputs
+    wire [11:0] rock0_pixel, rock1_pixel;
+    wire        in_rock0_area, in_rock1_area;                       
 
     // Game state
     reg [1:0] game_state = ST_START;
@@ -148,6 +152,28 @@ module vga_bitchange(
         .in_boat_area(in_boat_area)
     );
 
+    // --------------- ROCK SPRITES -----------------------
+    
+    rock_anim rock0_animation (
+        .clk(clk),
+        .rock_x_center(obs0_x_center),
+        .rock_y_top(obstacle_y0),
+        .hCount(hCount),
+        .vCount(vCount),
+        .rock_pixel(rock0_pixel),
+        .in_rock_area(in_rock0_area)
+    );
+    
+    rock_anim rock1_animation (
+        .clk(clk),
+        .rock_x_center(obs1_x_center),
+        .rock_y_top(obstacle_y1),
+        .hCount(hCount),
+        .vCount(vCount),
+        .rock_pixel(rock1_pixel),
+        .in_rock_area(in_rock1_area)
+    );
+
 
     // --------------- INITIAL STATE ----------------------
     initial begin
@@ -173,24 +199,11 @@ module vga_bitchange(
     end
 
     // --------------- COLLISION DETECTION ---------------------- 
+    // Use rock sprite areas for collision detection (more accurate than rectangles)
 
-    // X-overlap and Y-overlap for obstacle 0
-    wire x_overlap0 = (player_x_end   >= obs0_x_start) &&
-                    (player_x_start <= obs0_x_end);
-
-    wire y_overlap0 = (PLAYER_Y_END   >= obs0_y_start) &&
-                    (PLAYER_Y_START <= obs0_y_end);
-
-    wire collision0 = x_overlap0 && y_overlap0;
-
-    // X-overlap and Y-overlap for obstacle 1
-    wire x_overlap1 = (player_x_end   >= obs1_x_start) &&
-                    (player_x_start <= obs1_x_end);
-
-    wire y_overlap1 = (PLAYER_Y_END   >= obs1_y_start) &&
-                    (PLAYER_Y_START <= obs1_y_end);
-
-    wire collision1 = x_overlap1 && y_overlap1;
+    // Collision with rock 0 or rock 1
+    wire collision0 = in_rock0_area && in_boat_area;
+    wire collision1 = in_rock1_area && in_boat_area;
 
     // Final collision flag
     wire collision = collision0 || collision1;
@@ -346,7 +359,7 @@ module vga_bitchange(
         end
         else if (is_gameover && collision) begin
             // show collision in red
-            if (in_player_rect || in_obstacle_rect)
+            if (in_boat_area || in_rock0_area || in_rock1_area)
                 rgb = RED;
             else if (in_sand_area)
                 rgb = SAND;       // sand border even in gameover
@@ -366,8 +379,11 @@ module vga_bitchange(
                 if (in_lane_lines)
                     rgb = BLUE;   // lane dividers
 
-                if (in_obstacle_rect)
-                    rgb = GREEN;  // obstacle
+                // Draw rock sprites instead of green rectangles
+                if (in_rock0_area)
+                    rgb = rock0_pixel;
+                else if (in_rock1_area)
+                    rgb = rock1_pixel;
 
               //  if (in_player_rect)
                 //    rgb = WHITE;      // player
