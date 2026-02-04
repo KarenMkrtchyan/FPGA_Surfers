@@ -1,7 +1,7 @@
 # FPGA Surfers
 
 <video controls autoplay loop muted playsinline width="640">
-  <source src="./demo.mp4" type="video/mp4">
+  <source src="https://raw.githubusercontent.com/KarenMkrtchyan/FPGA_Surfers/main/demo.mp4" type="video/mp4">
   Demo video not supported by your browser.
 </video>
 
